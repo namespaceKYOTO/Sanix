@@ -1,15 +1,17 @@
 ROOT		= /c/GitHub/project/Sanix
+
+SOURCE		= $(ROOT)/source
 TOOLS		= $(ROOT)/tools
 
 
 NASM		= $(TOOLS)/nasm/nasm.exe
 DISNASM		= .\tools\nasm\ndisasm.interruptexe
 EDIMG		= $(TOOLS)/edimg/edimg.exe
-IN_BIN		= ./source
-IN_BOOT		= ./source/boot
-IN_ASM		= ./source/asm
-IN_NASM		= ./source/nasm
-INCLUDE		= ./source/include/
+IN_BIN		= $(SOURCE)
+IN_BOOT		= $(SOURCE)/boot
+IN_ASM		= $(SOURCE)/asm
+IN_NASM		= $(SOURCE)/nasm
+INCLUDE		= $(SOURCE)/include/
 OUT			= ./out
 OUT_BIN		= $(OUT)/bin
 OUT_LISTING	= $(OUT)/listing
@@ -17,7 +19,7 @@ OUT_DUMP	= $(OUT)/dump
 OUT_IMG		= $(OUT)/img
 OUT_OBJ		= $(OUT)/obj
 OUT_DUMP	= $(OUT)/dump
-INTERMEDIATE	= ./source/out
+INTERMEDIATE	= $(SOURCE)/out
 QEMU		= $(TOOLS)/qemu
 DOXYGEN		= $(TOOLS)/doxygen
 
@@ -26,16 +28,19 @@ DOXYGEN		= $(TOOLS)/doxygen
 # ターゲット、必須項目を探すディレクトリを増やす
 # target and required item
 #--------------------------------------------------------
-VPATH		= ./source/ ./source/graphic/ ./source/boot/ ./source/asm/ \
-			./source/interrupt/ ./source/kernel/ ./source/arc/x86 ./source/out \
-			./source/mem ./source/nasm ./source/debug ./source/include \
-			./source/math/ ./source/driver/ ./source/util ./source/ui \
-			./source/arc/x86 ./source/driver/ata ./source/arc/x86/pci \
-			./source/arc/x86/include ./source/sys ./source/console
+VPATH		= $(SOURCE) $(SOURCE)/graphic/ $(SOURCE)/boot/ \
+			$(SOURCE)/asm/ $(SOURCE)/interrupt/ \
+			$(SOURCE)/kernel/ $(SOURCE)/arc/x86 $(SOURCE)/out \
+			$(SOURCE)/mem $(SOURCE)/nasm $(SOURCE)/debug \
+			$(SOURCE)/include $(SOURCE)/math/ $(SOURCE)/driver/ \
+			$(SOURCE)/util $(SOURCE)/ui $(SOURCE)/arc/x86 \
+			$(SOURCE)/driver/ata $(SOURCE)/arc/x86/pci \
+			$(SOURCE)/arc/x86/include $(SOURCE)/sys \
+			$(SOURCE)/console
 
 _DEF = -D__ENABLE_PROCESS__ -D__SDEBUG__
-_INC = -I ./source/include -I ./source/arc/x86/include -finline-functions \
-		-include ./source/include/type.h -include ./source/include/define.h
+_INC = -I $(SOURCE)/include -I $(SOURCE)/arc/x86/include -finline-functions \
+		-include $(SOURCE)/include/type.h -include $(SOURCE)/include/define.h
 CFLAGS =  $(_INC) \
 		$(_DEF)
 
@@ -91,7 +96,7 @@ asm.o : $(GAS_OBJ)
 	@echo   $@
 	@echo ---------------
 	gcc -c $(GAS_OBJ) \
-	-I ./source/include -nostdlib \
+	-I $(SOURCE)/include -nostdlib \
 	-march=i386
 
 GAS_OBJ := bootloader.bin empty.bin bs.bin fasm.o \
