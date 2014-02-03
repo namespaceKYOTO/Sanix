@@ -5,37 +5,37 @@ TOOLS		= $(ROOT)/tools
 NASM		= $(TOOLS)/nasm/nasm.exe
 DISNASM		= .\tools\nasm\ndisasm.interruptexe
 EDIMG		= $(TOOLS)/edimg/edimg.exe
-IN_BIN		= ./../source/in
-IN_BOOT		= ./../source/in/boot
-IN_ASM		= ./../source/in/asm
-IN_NASM		= ./../source/in/nasm
-INCLUDE		= ./../source/in/include/
-OUT			= ./../source/out
-OUT_BIN		= ./../source/out/bin
-OUT_LISTING	= ./../source/out/listing
-OUT_DUMP	= ./../source/out/dump
-OUT_IMG		= ./../source/out/img
-OUT_OBJ		= ./../source/out/obj
-OUT_DUMP	= ./../source/out/dump
-INTERMEDIATE	= ./../source/in/out
+IN_BIN		= ./source
+IN_BOOT		= ./source/boot
+IN_ASM		= ./source/asm
+IN_NASM		= ./source/nasm
+INCLUDE		= ./source/include/
+OUT			= ./out
+OUT_BIN		= $(OUT)/bin
+OUT_LISTING	= $(OUT)/listing
+OUT_DUMP	= $(OUT)/dump
+OUT_IMG		= $(OUT)/img
+OUT_OBJ		= $(OUT)/obj
+OUT_DUMP	= $(OUT)/dump
+INTERMEDIATE	= ./source/out
 QEMU		= $(TOOLS)/qemu
 DOXYGEN		= $(TOOLS)/doxygen
 
 
-#################################################
+#--------------------------------------------------------
 # ターゲット、必須項目を探すディレクトリを増やす
 # target and required item
-#
-VPATH		= ./in/ ./in/graphic/ ./in/boot/ ./in/asm/ \
-			./in/interrupt/ ./in/kernel/ ./in/arc/x86 ./in/out \
-			./in/mem ./in/nasm ./in/debug ./in/include \
-			./in/math/ ./in/driver/ ./in/util ./in/ui ./in/arc/x86 \
-			./in/driver/ata ./in/arc/x86/pci ./in/arc/x86/include \
-			./in/sys ./in/console
+#--------------------------------------------------------
+VPATH		= ./source/ ./source/graphic/ ./source/boot/ ./source/asm/ \
+			./source/interrupt/ ./source/kernel/ ./source/arc/x86 ./source/out \
+			./source/mem ./source/nasm ./source/debug ./source/include \
+			./source/math/ ./source/driver/ ./source/util ./source/ui \
+			./source/arc/x86 ./source/driver/ata ./source/arc/x86/pci \
+			./source/arc/x86/include ./source/sys ./source/console
 
 _DEF = -D__ENABLE_PROCESS__ -D__SDEBUG__
-_INC = -I ./in/include -I ./in/arc/x86/include -finline-functions \
-		-include ./in/include/type.h -include ./in/include/define.h
+_INC = -I ./source/include -I ./source/arc/x86/include -finline-functions \
+		-include ./source/include/type.h -include ./source/include/define.h
 CFLAGS =  $(_INC) \
 		$(_DEF)
 
@@ -75,7 +75,6 @@ SIPL.img : $(OUT_BIN)/bootloader.bin $(OUT_BIN)/SIPL.bin
 	@echo ++-+-+-+-+-+-+-+-+-++
 	@echo     create .img
 	@echo ++-+-+-+-+-+-+-+-+-++
-#	cat $(OUT_BIN)/bootloader.bin $(OUT_BIN)/empty.bin $(OUT_BIN)/bs.bin > $(OUT_BIN)/boot.bin
 	cat $(OUT_BIN)/bootloader.bin $(OUT_BIN)/bs.bin > $(OUT_BIN)/boot.bin
 	cat $(OUT_BIN)/boot.bin $(OUT_BIN)/SIPL.bin > $(OUT_IMG)/$@
 	cp $(OUT_IMG)/$@ $(QEMU)/hdimage0.bin
@@ -92,7 +91,7 @@ asm.o : $(GAS_OBJ)
 	@echo   $@
 	@echo ---------------
 	gcc -c $(GAS_OBJ) \
-	-I ./in/include -nostdlib \
+	-I ./source/include -nostdlib \
 	-march=i386
 
 GAS_OBJ := bootloader.bin empty.bin bs.bin fasm.o \
@@ -147,7 +146,7 @@ c32 :
 	-make c32_obj
 	@echo -------------------------
 	@echo -------------------------
-	-make c32_dump
+#	-make c32_dump
 
 skernel.o : skernel.c
 	@echo ---------------
@@ -176,7 +175,7 @@ dir :
 	-mkdir $(OUT_DUMP)
 	-mkdir $(OUT_IMG)
 	-mkdir $(OUT_OBJ)
-	chmod 777 -R $(ROOT)/in
+	chmod 777 -R $(ROOT)/source
 
 bin :
 	-mkdir $(OUT)
