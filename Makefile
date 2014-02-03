@@ -74,14 +74,14 @@ nasm_obj :
 
 
 #--------------------------------------------------------
-# OS Image SIPL
+# OS Image Sanix
 #--------------------------------------------------------
-SIPL.img : $(OUT_BIN)/bootloader.bin $(OUT_BIN)/SIPL.bin
+Sanix.img : $(OUT_BIN)/bootloader.bin $(OUT_BIN)/Sanix.bin
 	@echo ++-+-+-+-+-+-+-+-+-++
 	@echo     create .img
 	@echo ++-+-+-+-+-+-+-+-+-++
 	cat $(OUT_BIN)/bootloader.bin $(OUT_BIN)/bs.bin > $(OUT_BIN)/boot.bin
-	cat $(OUT_BIN)/boot.bin $(OUT_BIN)/SIPL.bin > $(OUT_IMG)/$@
+	cat $(OUT_BIN)/boot.bin $(OUT_BIN)/Sanix.bin > $(OUT_IMG)/$@
 	cp $(OUT_IMG)/$@ $(QEMU)/hdimage0.bin
 	-objdump -b binary -M intel -m i386 -D $(OUT_IMG)/$@ > $(OUT_DUMP)/$@_dump.txt
 	@echo ++-+-+-+-+-+-+-+-+-++
@@ -161,7 +161,7 @@ skernel.o : skernel.c
 	$(CFLAGS)
 
 #--------------------------------------------------------
-# intermediate file SIPL
+# intermediate file Sanix
 # link .o
 #--------------------------------------------------------
 include $(INTERMEDIATE)/ld.mk
@@ -210,7 +210,7 @@ compile :
 full :
 	$(MAKE) dir
 	$(MAKE) compile 2>&1 | tee compile_log.txt
-	$(MAKE) SIPL.img
+	$(MAKE) Sanix.img
 
 rebuild:
 	make del
