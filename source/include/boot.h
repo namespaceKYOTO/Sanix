@@ -22,20 +22,17 @@
 #define E820_TYPE_DISABLE	0x06	/**/
 
 struct e820_entry {
-//	union {
-//		u64		addr;
-//		struct {
-			u32 addr_low;
-			u32 addr_high;
-//		};
-//	};
-//	union {
-//		u64		leght;
-//		struct {
-			u32 length_low;
-			u32 length_high;
-//		};
-//	};
+	// 
+	u32 size;
+	
+	// total 64bit starting address.
+	u32 addr_low;
+	u32 addr_high;
+	
+	// total 64bit length
+	u32 length_low;
+	u32 length_high;
+	
 	u32		type;
 	u32		extention;
 };

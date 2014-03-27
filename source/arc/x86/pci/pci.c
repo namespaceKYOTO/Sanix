@@ -8,6 +8,7 @@
 #include "type.h"
 #include "memory.h"
 #include "console.h"
+#include "debug.h"
 #include "pci.h"
 
 struct pci_device_man g_pci_man;
@@ -72,6 +73,7 @@ void init_pci( void )
 			u16 did = (u16)((ret >> 16) & 0x0000FFFF);
 			if( vid != 0xFFFF ) {
 				struct pci_device *pci = (struct pci_device *)alloc_gp_slab_mem(sizeof(struct pci_device));
+				S_ASSERT(pci, "Failed init_pci");
 				pci->vendor_id = vid;
 				pci->device_id = did;
 				pci->next = NULL;

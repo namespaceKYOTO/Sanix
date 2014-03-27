@@ -8,6 +8,7 @@
 #include "graphic.h"
 #include "graphic2d.h"
 #include "console.h"
+#include "debug.h"
 #include "widget.h"
 
 /*---------------------------------------------------------------------*/
@@ -20,7 +21,6 @@ void init_widget( struct widget *widget )
 //	widget->pos = vector3_t( 0.0f, 0.0f, 0.0f );
 	widget->data.parent = NULL;
 	widget->data.child = NULL;
-//	INIT_SLIST( (&widget->data.brother) );
 	slist_init( &widget->data.brother );
 	
 	widget->data.is_touch = false;
@@ -121,7 +121,7 @@ void put_c( struct text_box *text_box, u8 c, u8 color )
 	s16 posx = text_box->base.data.rect.posx + (text_box->now_col * DEBUG_FONT_SIZE_X);
 	s16 posy = text_box->base.data.rect.posy + (text_box->now_row * DEBUG_FONT_SIZE_Y);
 	
-	if( c == 0x0A/*is_linefeed(c)*/ ) {
+	if( c == '\n'/*0x0A*//*is_linefeed(c)*/ ) {
 		text_box->now_col = 0;
 		++text_box->now_row;
 	} else {
@@ -190,6 +190,7 @@ u32 get_widget_size( s32 type )
 struct widget* create_widget( s32 type )
 {
 	struct widget* widget = (struct widget*)alloc_gp_slab_mem( get_widget_size(type) );
+	S_ASSERT(widget, "Failed create_widget");
 	
 	set_widget_operation( type, widget);
 	widget->ope.init( widget );

@@ -22,7 +22,7 @@ void kill( s32 pid )
 	if( _pstr ) {
 		puts_console("proces kill :: ");
 #if defined __SDEBUG__
-		puts_console( _pstr->debug_name );
+		puts_console( _pstr->proc_name );
 		putc_console('\n');
 #endif // __SDEBUG__
 		return;

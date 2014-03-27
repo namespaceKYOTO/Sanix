@@ -12,13 +12,13 @@
 #include "memory.h"
 #include "descriptor.h"
 #include "console.h"
-#include "task.h"
 #include "graphic.h"
 #include "console.h"
 #include "fasm.h"
 #include "inthandler.h"
 #include "interrupt.h"
 #include "page.h"
+#include "debug.h"
 #include "process.h"
 
 
@@ -123,24 +123,19 @@ inline void __release_pid( u32 pid )
  * @brief	schedule process
  */
 /*---------------------------------------------------------------------*/
-inline void start_multi_proc( void )
+void start_multi_proc( void )
 {
-#if 0
-	proc0();
-#else
-	#if defined __SDEBUG__
-	s32 idx = 20;
-	struct slist *list = proc_dtbl.run_list.next;
-	for_each_list( &proc_dtbl.run_list, list )
-	{
-		proc_struct_t *proc = STATE_LIST_TO_PROC_STRUCT( list );
-		puts_console("create proc" );
-		puts_console(proc->debug_name);
-		++idx;
-	}
-#endif // __SDEBUG__
-
 	proc_context_t *context= proc_dtbl.current_proc->hcontext;
+#ifdef __SDEBUG__
+	S_ASSERT(context, "null");
+	puts_console("-- start_multi_proc --\n");
+//	puts_console(CONTEXT_TO_PROC_STRUCT(context)->proc_name);
+//	puts_console("\n");
+	puth_console(context->context.eip);
+	puts_console("\n");
+//	puth_console((u32)proc0);
+//	puts_console("\n");
+#endif	//__SDEBUG__
 	u8 *_stack = &context->stack[sizeof(context->stack) - 1];
 	__asm__ __volatile__(
 		"movl %[stack],%%esp\n\t"
@@ -150,7 +145,6 @@ inline void start_multi_proc( void )
 		:
 		:"memory"
 	);
-#endif
 }
 
 /*---------------------------------------------------------------------*/
@@ -182,15 +176,15 @@ void schedule( void )
 	
 #if defined __SDEBUG__
 //	puts_console("next process name", 0, DEBUG_FONT_SIZE_Y*16);
-//	puts_console( next->debug_name, DEBUG_FONT_SIZE_X*30, DEBUG_FONT_SIZE_Y*16);
+//	puts_console( next->proc_name, DEBUG_FONT_SIZE_X*30, DEBUG_FONT_SIZE_Y*16);
 #endif	//__SDEBUG__
 
 	proc_dtbl.current_proc = next;
 
 //	puth_console(current, 0, DEBUG_FONT_SIZE_Y*15);
-//	puts_console(current->debug_name, DEBUG_FONT_SIZE_X*20, DEBUG_FONT_SIZE_Y*15);
+//	puts_console(current->proc_name, DEBUG_FONT_SIZE_X*20, DEBUG_FONT_SIZE_Y*15);
 //	puth_console(next, 0, DEBUG_FONT_SIZE_Y*16);
-//	puts_console(next->debug_name, DEBUG_FONT_SIZE_X*20, DEBUG_FONT_SIZE_Y*16);
+//	puts_console(next->proc_name, DEBUG_FONT_SIZE_X*20, DEBUG_FONT_SIZE_Y*16);
 /*************************************/
 // ¦–â‘è“_ July.01.2013 ‰ðŒˆ!?
 #if 0
@@ -207,7 +201,7 @@ void schedule( void )
 #if defined __SDEBUG__
 	++idx;
 	puts_console("schedule current proc", 0, DEBUG_FONT_SIZE_Y*idx);
-	puts_console(current->debug_name, DEBUG_FONT_SIZE_X*30, DEBUG_FONT_SIZE_Y*idx);
+	puts_console(current->proc_name, DEBUG_FONT_SIZE_X*30, DEBUG_FONT_SIZE_Y*idx);
 	++idx;
 	puts_console("schedule current eip", 0, DEBUG_FONT_SIZE_Y*idx);
 	puth_console(current->hcontext->context.eip, DEBUG_FONT_SIZE_X*30, DEBUG_FONT_SIZE_Y*idx);
@@ -219,27 +213,27 @@ void schedule( void )
 	++idx;
 //	puts_console("schedule next context", 0, DEBUG_FONT_SIZE_Y*idx);
 //	puth_console(next, DEBUG_FONT_SIZE_X*30, DEBUG_FONT_SIZE_Y*idx);
-	puts_console("schedule next context");
-	puth_console(next);
+//	puts_console("schedule next context");
+//	puth_console(next);
 	++idx;
-	puts_console("schedule next stack");
-	puth_console(*((u32*)next->hcontext->context.esp));
+//	puts_console("schedule next stack");
+//	puth_console(*((u32*)next->hcontext->context.esp));
 #if defined __SDEBUG__
-	++idx;
-	puts_console("schedule next proc");
-	puts_console(next->debug_name);
-	++idx;
-	puts_console("schedule next eip");
-	puth_console(next->hcontext->context.eip);
-	++idx;
-	puts_console("schedule proc1");
-	puth_console(proc1);
+//	++idx;
+//	puts_console("schedule next proc");
+//	puts_console(next->proc_name);
+//	++idx;
+//	puts_console("schedule next eip");
+//	puth_console(next->hcontext->context.eip);
+//	++idx;
+//	puts_console("schedule proc1");
+//	puth_console(proc1);
 #endif // __SDEBUG__
 	
-	puts_console("proc dtbl address ");
-	puth_console(&proc_dtbl);
-	puts_console("current proc");
-	puth_console(proc_dtbl.current_proc);
+//	puts_console("proc dtbl address ");
+//	puth_console(&proc_dtbl);
+//	puts_console("current proc");
+//	puth_console(proc_dtbl.current_proc);
 #endif
 /*************************************/
 	
@@ -273,7 +267,7 @@ void schedule_exception( void )
 
 /*---------------------------------------------------------------------*/
 /*!
- * @brief	
+ * @brief	initialize process
  */
 /*---------------------------------------------------------------------*/
 void init_process( void )
@@ -299,21 +293,25 @@ void init_process( void )
 	// kernel prcess zero
 	proc_struct_t *proc = NULL;
 	proc = create_process( proc0, CLEATE_PROC_KERNEL );
-	puth_console(proc);
-	puts_console("proc context");
-	puth_console(proc->hcontext);
+//	puth_console(proc);
+//	puts_console("proc context");
+//	puth_console(proc->hcontext);
+//	putc_console('\n');
 
 	proc = create_process( proc1, CLEATE_PROC_KERNEL );
-	puth_console(proc);
-	puts_console("proc context");
-	puth_console(proc->hcontext);
+//	puth_console(proc);
+//	puts_console("proc context");
+//	puth_console(proc->hcontext);
+//	putc_console('\n');
 
-	create_process( test_proc, CLEATE_PROC_KERNEL );
+//	create_process( test_proc, CLEATE_PROC_KERNEL );
 
-	puts_console("proc dtbl address ");
-	puth_console(&proc_dtbl);
-	puts_console("current proc");
-	puth_console(proc_dtbl.current_proc);
+//	puts_console("proc dtbl address ");
+//	puth_console(&proc_dtbl);
+//	putc_console('\n');
+//	puts_console("current proc");
+//	puth_console(proc_dtbl.current_proc);
+//	putc_console('\n');
 
 	// user task
 	smemset( _tss_stack, 0x00, sizeof(_tss_stack));
@@ -357,11 +355,17 @@ proc_struct_t* _create_process( main_t func, u32 create_flag
 	enable_sched = false;
 
 	// allocate memory
-	proc_context_t	*context = (proc_context_t*)alloc_mem_block( FREE_BLOCK_4x1K );		// 
-//	proc_context_t	*context = (proc_context_t*)alloc_mem_block( FREE_BLOCK_4x1024K );	// provisional 4x1024K
+//	proc_context_t	*context = (proc_context_t*)alloc_mem_block( FREE_BLOCK_4x1K );		// 
+	proc_context_t	*context = (proc_context_t*)alloc_mem_block( FREE_BLOCK_4x1024K );	// provisional 4x1024K
 	proc_struct_t	*pstr = (proc_struct_t*)alloc_gp_slab_mem( sizeof(proc_struct_t) );
 	pid_t			*pid = (pid_t*)alloc_gp_slab_mem( sizeof(pid_t) );
-	
+
+	// failed create process
+	if( pstr == NULL || pid == NULL || context == NULL ) {
+		S_ASSERT( false, "Failed create process");
+		return NULL;
+	}
+
 	// initialize task struct
 	pstr->state = PROC_STATE_RUNNING;
 	slist_init( &pstr->state_list );
@@ -376,8 +380,8 @@ proc_struct_t* _create_process( main_t func, u32 create_flag
 //	init_heap_allocator( pstr->heap_allocator, heap, );
 
 #if defined __SDEBUG__
-	smemset( pstr->debug_name, 0, 128 );
-	strcpy( pstr->debug_name, proc_name);
+	smemset( pstr->proc_name, 0, 128 );
+	strcpy( pstr->proc_name, proc_name );
 #endif // __SDEBUG__
 
 	// initialize context
@@ -388,21 +392,25 @@ proc_struct_t* _create_process( main_t func, u32 create_flag
 	context->context.es = dseg;
 	context->context.fs = dseg;
 	context->context.gs = dseg;
+#if 0
 	if( context->context.esp == 0 ) {
-		puts_console("esp zero");
+		puts_console("esp zero\n");
 	}
+#endif
 	
-	//¦ callŽž‚Ìstack‚ð–Y‚ê‚È‚¢‚æ‚¤‚É
+	//¦ callŽž•ª‚Ìstack‚ð–Y‚ê‚È‚¢‚æ‚¤‚É
 	u32 eflag = 0;
 	u16 cseg = create_flag & CLEATE_PROC_KERNEL ? KERNEL_CS : USER_CS;
 	eflag = get_eflag();
+#if 0
 	if( (eflag & 0x00000200) == 0 ) {
-		puts_console( "interrupt flag zero");
+		puts_console("interrupt flag zero");
 		puth_console( eflag );
 	} else {
-		puts_console( "eflag");
+		puts_console("eflag");
 		puth_console( eflag );
 	}
+#endif
 	hard_context_stack_push( &context->context, _proc_exit );			// _proc_exit
 	hard_context_stack_push( &context->context, eflag );				// eflag
 	hard_context_stack_push( &context->context, cseg );					// code segment
@@ -412,8 +420,9 @@ proc_struct_t* _create_process( main_t func, u32 create_flag
 	
 	
 	// connect state list
-	if( proc_dtbl.current_proc == NULL )
+	if( proc_dtbl.current_proc == NULL ) {
 		proc_dtbl.current_proc = pstr;
+	}
 	slist_add_tail( &proc_dtbl.run_list, &pstr->state_list );
 	slist_add_tail( &proc_dtbl.all_list, &pstr->proc_list );
 
@@ -483,7 +492,7 @@ void _proc_exit( void )
 {
 	puts_console("\nooo Proc Exit\n ooo");
 #if defined __SDEBUG__
-	puts_console( proc_dtbl.current_proc->debug_name );
+	puts_console( proc_dtbl.current_proc->proc_name );
 	putc_console('\n');
 #endif
 
@@ -531,17 +540,17 @@ void proc0( void )
 	for(;;){
 	}
 */
-	puts_console("process0");
+	puts_console("process0\n");
 	enable_sched = true;
 	s32 n = 0;
 	for(;;){
-		putn_console( ++n );
+//		putn_console( ++n );
 	}
 }
 
 void proc1( void )
 {
-	puts_console("process1");
+//	puts_console("process1\n");
 	s32 n = 0;
 	for(;;){
 		/*
@@ -551,7 +560,7 @@ void proc1( void )
 			puts_console( "enable sched false", 0, DEBUG_FONT_SIZE_Y*15 );
 		}
 		*/
-		putn_console( ++n );
+//		putn_console( ++n );
 	}
 }
 
@@ -624,27 +633,14 @@ proc_struct_t *get_current_process( void )
 /*---------------------------------------------------------------------*/
 void debug_print_proc_all( void )
 {
-#if 0	// September.05.2013 t_sato
-	struct slist *_list = 0;//proc_dtbl.run_list.next;
-	proc_struct_t *_proc = 0;
-	for_each_list( &proc_dtbl.run_list, _list ) {
-		_proc = STATE_LIST_TO_PROC_STRUCT(_list);
-		if( _proc ) {
-			puts_console( _proc->debug_name );
-			puts_console("    ");
-			puth_console( _proc->pid_chain->pid );
-			putc_console('\n');
-		}
-	}
-#endif
 #if 1
 	struct slist *_list = 0;//proc_dtbl.all_list.next;
 	proc_struct_t *_proc = 0;
 	for_each_list( &proc_dtbl.all_list, _list ) {
 		_proc = PROC_LIST_TO_PROC_STRUCT(_list);
 		if( _proc ) {
-			puts_console( _proc->debug_name );
-			puts_console("    ");
+			puts_console( _proc->proc_name );
+			puts_console(" : ");
 			puth_console( _proc->pid_chain->pid );
 			putc_console('\n');
 		}

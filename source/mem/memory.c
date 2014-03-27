@@ -12,6 +12,15 @@
 #include "util.h"
 #include "memory.h"
 
+#if 0
+#define __puts( str )	puts_console( str );
+#define __putn( n )		putn_console( n );
+#define __putcr			putc_console('\n');
+#else
+#define __puts( str )	{}
+#define __putn( n )		{}
+#define __putcr			{}
+#endif
 
 static struct mem_map	*mem_map;
 struct mem_buddy		mem_buddy;
@@ -43,11 +52,11 @@ void init_memory( void )
 	// buddy system
 	smemset( (u8*)&mem_buddy, 0x00, sizeof(struct mem_buddy) );
 	init_mem_buddy();
-	puts("initialize memory buddy system", 0, 0);
+	puts("initialize memory buddy system", 0, 16);
 	
 	// slab system
 	init_gp_slab_mem();
-	puts("initialize gp slab memory", 0, 0);
+	puts("initialize gp slab memory", 0, 32);
 }
 
 
@@ -75,14 +84,32 @@ u32 __get_mem_state( u32 addr )
 		return MEM_RESERVE;
 	}else
 #endif
-	if( g_boot_info->e820map.num >= 0 ) {
+	if( false/*g_boot_info->e820map.num > 0*/ ) {
+		puts_console("g_boot_info->e820map.num : ");
+		putn_console(g_boot_info->e820map.num);
+		putc_console('\n');
+		puts_console("e820map base address : ");
+		puts_console("high=");
+		puth_console(g_boot_info->e820map.entry[0].addr_high);
+		puts_console(", low=");
+		puth_console(g_boot_info->e820map.entry[0].addr_low);
+		putc_console('\n');
+		puts_console("e820map base lenght : ");
+		puts_console("high=");
+		puth_console(g_boot_info->e820map.entry[0].length_high);
+		puts_console(", low=");
+		puth_console(g_boot_info->e820map.entry[0].length_low);
+		
+		S_ASSERT(0, "g_boot_info->e820map.num is not zero");	// debug
+		
 		s32 i = 0;
 		for( ; i < g_boot_info->e820map.num; ++i ) {
-			if( g_boot_info->e820map.entry[i].addr_low <= addr && addr < (g_boot_info->e820map.entry[i].addr_low + g_boot_info->e820map.entry[i].length_low) ) {
+			if(	g_boot_info->e820map.entry[i].addr_low <= addr 
+			&&	addr < (g_boot_info->e820map.entry[i].addr_low + g_boot_info->e820map.entry[i].length_low) ) {
 				return g_boot_info->e820map.entry[i].type;
 			}
 		}
-		return 0x00000002;
+		return MEM_RESERVE;
 	} else {
 		// sample memory map
 //		mem_entry[0].type = MEM_TYPE_MEMORY;
@@ -141,38 +168,39 @@ void create_memory_map( void )
 	mem_map->available_mem = 0x00;
 	mem_map->unavailable_mem = 0x00;
 	mem_map->slock.lock = 0;
-	mem_map->mem_head = (struct mem_block*)((u32)mem_map + sizeof(struct mem_map));
+	mem_map->mem_head = (mem_block_t*)((u32)mem_map + sizeof(struct mem_map));
 	slist_init( &mem_map->mem_head->list );
 	
-	struct mem_block *prev_block = mem_map->mem_head;
-	struct mem_block *now_block = mem_map->mem_head; //(struct mem_block*)((u32)mem_map + sizeof(struct mem_map));
-//	struct mem_block *now_block = mem_map->mem_desc;
+	mem_block_t *prev_block = mem_map->mem_head;
+	mem_block_t *now_block = mem_map->mem_head; //(mem_block_t*)((u32)mem_map + sizeof(struct mem_map));
+//	mem_block_t *now_block = mem_map->mem_desc;
 
 	//
-	u32 count = 1024 * 1023;
+	u32 count = 1024 * 1023;	// 4GByte / 4KByte
 	u32 i;
 	u32 addr = 0;
-#if 1
-//	struct e820_map *e820map = g_boot_info->e820map;
-	putn( g_boot_info->e820map.num, DEBUG_FONT_SIZE_X*10, DEBUG_FONT_SIZE_Y*2 );
+#if __SDEBUG__
+	s32 _y = 2;
+	struct e820_map *e820map = &g_boot_info->e820map;
+	putn( e820map->num, DEBUG_FONT_SIZE_X*10, DEBUG_FONT_SIZE_Y*_y++ );
 
-	puts("addr_low", DEBUG_FONT_SIZE_X*0, DEBUG_FONT_SIZE_Y*3 );
-	putn( g_boot_info->e820map.entry[0].addr_low, DEBUG_FONT_SIZE_X*20, DEBUG_FONT_SIZE_Y*3 );
+	puts("addr_low", DEBUG_FONT_SIZE_X*0, DEBUG_FONT_SIZE_Y*_y );
+	putn( e820map->entry[0].addr_low, DEBUG_FONT_SIZE_X*20, DEBUG_FONT_SIZE_Y*_y );
 	
-	puts("addr_high", DEBUG_FONT_SIZE_X*0, DEBUG_FONT_SIZE_Y*4 );
-	putn( g_boot_info->e820map.entry[0].addr_high, DEBUG_FONT_SIZE_X*20, DEBUG_FONT_SIZE_Y*4 );
+	puts("addr_high", DEBUG_FONT_SIZE_X*0, DEBUG_FONT_SIZE_Y*_y );
+	putn( e820map->entry[0].addr_high, DEBUG_FONT_SIZE_X*20, DEBUG_FONT_SIZE_Y*_y++ );
 	
-	puts("lengt low", DEBUG_FONT_SIZE_X*0, DEBUG_FONT_SIZE_Y*5 );
-	putn( g_boot_info->e820map.entry[0].length_low, DEBUG_FONT_SIZE_X*20, DEBUG_FONT_SIZE_Y*5 );
+	puts("lengt low", DEBUG_FONT_SIZE_X*0, DEBUG_FONT_SIZE_Y*_y );
+	putn( e820map->entry[0].length_low, DEBUG_FONT_SIZE_X*20, DEBUG_FONT_SIZE_Y*_y++ );
 
-	puts("length high", DEBUG_FONT_SIZE_X*0, DEBUG_FONT_SIZE_Y*6 );
-	putn( g_boot_info->e820map.entry[0].length_high, DEBUG_FONT_SIZE_X*20, DEBUG_FONT_SIZE_Y*6 );
+	puts("length high", DEBUG_FONT_SIZE_X*0, DEBUG_FONT_SIZE_Y*_y );
+	putn( e820map->entry[0].length_high, DEBUG_FONT_SIZE_X*20, DEBUG_FONT_SIZE_Y*_y++ );
 
-	puts("type", DEBUG_FONT_SIZE_X*0, DEBUG_FONT_SIZE_Y*7 );
-	putn( g_boot_info->e820map.entry[0].type, DEBUG_FONT_SIZE_X*20, DEBUG_FONT_SIZE_Y*7 );
+	puts("type", DEBUG_FONT_SIZE_X*0, DEBUG_FONT_SIZE_Y*_y );
+	putn( e820map->entry[0].type, DEBUG_FONT_SIZE_X*20, DEBUG_FONT_SIZE_Y*_y++ );
 
-	puts("extention", DEBUG_FONT_SIZE_X*0, DEBUG_FONT_SIZE_Y*8 );
-	putn( g_boot_info->e820map.entry[0].extention, DEBUG_FONT_SIZE_X*20, DEBUG_FONT_SIZE_Y*8 );
+	puts("extention", DEBUG_FONT_SIZE_X*0, DEBUG_FONT_SIZE_Y*_y );
+	putn( e820map->entry[0].extention, DEBUG_FONT_SIZE_X*20, DEBUG_FONT_SIZE_Y*_y++ );
 #endif
 	for( i = 0; i < count; ++i ) {
 		// Analyze memory
@@ -192,7 +220,10 @@ void create_memory_map( void )
 				break;
 			
 			default:
+		#if __SDEBUG__
 				S_ASSERT(0, "Analyze memory error");
+		#endif
+				mem_map->unavailable_mem += MEMORY_4KBYTE;
 				break;
 		}
 		
@@ -202,6 +233,10 @@ void create_memory_map( void )
 		slist_init( &now_block->list );
 		addr += MEMORY_4KBYTE;
 	}
+#if __SDEBUG__
+	puts("create_memory_map : ", 0, DEBUG_FONT_SIZE_Y*_y);
+	putn( i, DEBUG_FONT_SIZE_X*30, DEBUG_FONT_SIZE_Y*_y++ );
+#endif
 	mem_map->nr_mem_block = i;
 }
 
@@ -211,64 +246,85 @@ void create_memory_map( void )
 /*========================================================================*/
 void init_mem_buddy( void )
 {
+	const u32 max_order = FREE_BLOCK_4x1024K;
 	u32 order = 0;
 	u32 size = 0;
-	u32 addr = 0;
-	u32 fb_addr[FREE_BLOCK_TYPE_NUM];
-	smemset( (u8*)fb_addr, 0x00, sizeof(fb_addr));
+//	u32 addr = 0;
+//	u32 fb_addr[FREE_BLOCK_TYPE_NUM];
+	mem_block_t *free_blocks[FREE_BLOCK_TYPE_NUM];
+	mem_block_t *free_block = NULL;
+//	smemset( (u8*)fb_addr, 0x00, sizeof(fb_addr));
+	smemset( (u8*)free_blocks, 0x00, sizeof(free_blocks));
 
 	/* analyze memory map */
 	slist_t* _list = &mem_map->mem_head->list;
 	for_each_list_do
 	{
+		// valid memroy
 		if( MEM_FLAG( MEM_BLOCK( _list )->flag, MEM_MEMORY) ) {
 			size += MEMORY_4KBYTE;
-			if( (MEMORY_4KBYTE << order) < size ){
-				++order;
-				addr = (u32)MEM_BLOCK( _list );
+			if( free_block == NULL ) {
+				free_block = MEM_BLOCK( _list );	// split address
 			}
-			if( order > FREE_BLOCK_4x1024K ) {
-				if( fb_addr[order-1] == 0x00 ) {
-					fb_addr[order-1] = addr;
-					mem_buddy.free_block[order-1].head = (u32*)addr;
+			
+			if( (MEMORY_4KBYTE << order) < size ){
+				++order;						// next order
+			//	addr = (u32)MEM_BLOCK( _list );	// split addres
+				//free_block = MEM_BLOCK( _list );	// split addres
+				
+				// この変数値をsplitのアドレスとしているが
+				// split時まで更新されないのが正しい...
+			//	if( order <= max_order ) {
+			//		addr = (u32)MEM_BLOCK( _list );	// split address	
+			//	}
+			}
+			// max size
+			if( order > max_order ) {
+				if( free_blocks[ max_order ] == 0x00 ) {
+					free_blocks[ max_order] = free_block;
+					free_blocks[ max_order]->flag |= ((max_order)<<MEM_ORDER_START_BIT);
+					mem_buddy.free_block[ max_order ].head = (u32*)free_block;
 				} else {
-					((struct mem_block*)fb_addr[order-1])->flag |= ((order-1)<<24);
-					((struct mem_block*)fb_addr[order-1])->private = addr;
-					fb_addr[order-1] = addr;
+					free_blocks[ max_order]->flag |= ((max_order)<<MEM_ORDER_START_BIT);
+					free_blocks[ max_order]->private = (u32)free_block;
+					free_blocks[ max_order] = free_block;
 				}
-				++mem_buddy.free_block[order-1].nr_free_block;
+				++mem_buddy.free_block[ max_order ].nr_free_block;
 				order = 0;
 				size = 0;
+				free_block = MEM_BLOCK( _list );	// split address
 			}
-		} else
-		if(size != 0) {
-			if( fb_addr[order-1] == 0x00 ) {
-				fb_addr[order-1] = addr;
-				mem_buddy.free_block[order-1].head = (u32*)addr;
+		}
+		// invalid memory
+		else if(size != 0) {
+			if( free_blocks[order-1] == 0x00 ) {
+				free_blocks[ order-1 ] = free_block;
+				free_blocks[ order-1 ]->flag |= ((order-1)<<MEM_ORDER_START_BIT);
+				mem_buddy.free_block[order-1].head = (u32*)free_block;
 			} else {
-				((struct mem_block*)fb_addr[order-1])->flag |= ((order-1)<<24);
-				((struct mem_block*)fb_addr[order-1])->private = addr;
-				fb_addr[order-1] = addr;
+				free_blocks[ order-1 ]->flag |= ((order-1)<<MEM_ORDER_START_BIT);
+				free_blocks[ order-1 ]->private = (u32)free_block;
+				free_blocks[ order-1 ] = free_block;
 			}
 			++mem_buddy.free_block[order-1].nr_free_block;
 			u32 remainder = size - (MEMORY_4KBYTE << (order-1));
 			s32 nr = order-1;
-			addr += sizeof(struct mem_block) * (0x01 << (order-1));
+			free_block += (0x01 << (order-1));
 			for( ; nr >= 0; --nr ) {
-			//while( remainder ){
 				if(remainder >= (MEMORY_4KBYTE << nr)) {
 					++mem_buddy.free_block[nr].nr_free_block;
 					remainder -= (MEMORY_4KBYTE << nr);
-					if( fb_addr[nr] == 0x00 ) {
-						fb_addr[nr] = addr;
-						mem_buddy.free_block[nr].head = (u32*)addr;
+					if( free_blocks[nr] == 0x00 ) {
+						free_blocks[ nr ] = free_block;
+						free_blocks[ nr ]->flag |= ((nr)<<MEM_ORDER_START_BIT);
+						mem_buddy.free_block[ nr ].head = (u32*)free_block;
 					} else {
-						((struct mem_block*)fb_addr[nr])->flag |= (nr<<24);
-						((struct mem_block*)fb_addr[nr])->private = addr;
-						fb_addr[nr] = addr;
+						free_blocks[nr]->flag |= (nr<<24);
+						free_blocks[nr]->private = free_block;
+						free_blocks[nr] = free_block;
 					}
 					++mem_buddy.free_block[nr].nr_free_block;
-					addr += sizeof(struct mem_block) * (0x01 << (nr));
+					free_block += (0x01 << nr);
 				} /*else {
 					--nr;
 				}*/
@@ -276,6 +332,7 @@ void init_mem_buddy( void )
 			//++mem_buddy.free_block[order-1].nr_free_block;
 			order = 0;
 			size = 0;
+			free_block = MEM_BLOCK( _list );	// split address
 		}
 	}
 	for_each_list_while( &mem_map->mem_head->list, _list )
@@ -289,7 +346,7 @@ void _split_buddy_block( s32 split_order, s32 order )
 	while( split_order > order ) {
 		S_ASSERT( mem_buddy.free_block[split_order].nr_free_block > 0, "buddy split error");
 		split_front = (u32)mem_buddy.free_block[split_order].head;
-		split_back = split_front + sizeof(struct mem_block) * (0x01 << (split_order-1));
+		split_back = split_front + sizeof(mem_block_t) * (0x01 << (split_order-1));
 		if( split_front == 0 || split_back == 0) {
 			puts("split_front", 8*0, 16*1 );
 			puth( split_front, 8*21, 16*1 );
@@ -299,7 +356,7 @@ void _split_buddy_block( s32 split_order, s32 order )
 			S_ASSERT( split_back > 0, "buddy split back error");
 		}
 
-		mem_buddy.free_block[split_order].head = (u32*)((struct mem_block*)split_front)->private;
+		mem_buddy.free_block[split_order].head = (u32*)((mem_block_t*)split_front)->private;
 		--mem_buddy.free_block[split_order].nr_free_block;
 #if 0	// free_block数が1の場合は 0 になることもあり得る
 		if( mem_buddy.free_block[split_order].head == 0 ) {
@@ -311,8 +368,8 @@ void _split_buddy_block( s32 split_order, s32 order )
 		}
 #endif
 		
-		((struct mem_block*)split_front)->private = split_back;
-		((struct mem_block*)split_back)->private = (u32)mem_buddy.free_block[split_order - 1].head;
+		((mem_block_t*)split_front)->private = split_back;
+		((mem_block_t*)split_back)->private = (u32)mem_buddy.free_block[split_order - 1].head;
 		mem_buddy.free_block[split_order - 1].head = (u32*)split_front;
 		mem_buddy.free_block[split_order - 1].nr_free_block += 2;
 		
@@ -325,9 +382,9 @@ u32 _integration_buddy_block( u32 addr, u32 order )
 	/* 隣接する */
 	u32 prev_addr = addr - (0x00001000 << order);
 	u32 next_addr = addr + (0x00001000 << order);
-	struct mem_block *prev = MEM_ADDR_TO_BLOCK( prev_addr );
-	struct mem_block *next = MEM_ADDR_TO_BLOCK( next_addr );
-	struct mem_block *current = MEM_ADDR_TO_BLOCK( addr );
+	mem_block_t *prev = MEM_ADDR_TO_BLOCK( prev_addr );
+	mem_block_t *next = MEM_ADDR_TO_BLOCK( next_addr );
+	mem_block_t *current = MEM_ADDR_TO_BLOCK( addr );
 	u32 ret = 0;
 	
 	if( ((prev->flag & 0xFF000000) >> 24) == order && prev->private != 0 ) {
@@ -358,27 +415,29 @@ u32 _integration_buddy_block( u32 addr, u32 order )
 /*---------------------------------------------------------------------*/
 u32 alloc_mem_block( u32 order )
 {
-	struct mem_block *mem = NULL;
-	struct mem_block *block = NULL;
+//	S_ASSERT(order < FREE_BLOCK_4x1024K, "order size error");
+	if( order > FREE_BLOCK_4x1024K ) { return NULL; }
+
+	mem_block_t *mem = NULL;
+//	mem_block_t *block = NULL;
 	
 	spin_lock( (&mem_map->slock) );
 	
 	if( mem_buddy.free_block[order].nr_free_block ) {
 		--mem_buddy.free_block[order].nr_free_block;
-		mem = (struct mem_block*)mem_buddy.free_block[order].head;
+		mem = (mem_block_t*)mem_buddy.free_block[order].head;
 		mem_buddy.free_block[order].head =
-			(u32*)((struct mem_block*)mem_buddy.free_block[order].head)->private;
+			(u32*)((mem_block_t*)mem_buddy.free_block[order].head)->private;
 	} else {
-		S_ASSERT(order < FREE_BLOCK_4x1024K, "order size error");
 		// ないので,大きい所から分けてもらう...
 		s32 split_order = order + 1;
 		for( ; split_order < FREE_BLOCK_TYPE_NUM; ++split_order ) {
 			if( mem_buddy.free_block[split_order].nr_free_block ) {
 				_split_buddy_block( split_order, order );
 				--mem_buddy.free_block[order].nr_free_block;
-				mem = (struct mem_block*)mem_buddy.free_block[order].head;
+				mem = (mem_block_t*)mem_buddy.free_block[order].head;
 				mem_buddy.free_block[order].head =
-					(u32*)((struct mem_block*)mem_buddy.free_block[order].head)->private;
+					(u32*)((mem_block_t*)mem_buddy.free_block[order].head)->private;
 				break;
 			}
 		}
@@ -396,14 +455,14 @@ u32 alloc_mem_block( u32 order )
 }
 /*---------------------------------------------------------------------*/
 /*!
- * @brief	free memory block
+ * .@brief	free memory block
  */
 /*---------------------------------------------------------------------*/
 void free_mem_block( u32 addr, u32 order )
 {
 	spin_lock( (&mem_map->slock) );
 	
-	struct mem_block *block = MEM_ADDR_TO_BLOCK( addr );
+	mem_block_t *block = MEM_ADDR_TO_BLOCK( addr );
 	if( MEM_FLAG(block->flag, MEM_USE) ) {
 		OFF_MEM_FLAG(block->flag, MEM_USE);
 		mem_map->available_mem += (0x00001000 << order);
@@ -437,10 +496,10 @@ void free_mem_block( u32 addr, u32 order )
 
 u32 get_nr_free_block( u32 order )
 {
-	struct mem_block *block = (struct mem_block*)mem_buddy.free_block[order].head;
+	mem_block_t *block = (mem_block_t*)mem_buddy.free_block[order].head;
 	u32 nr = 0;
 	while( block ) {
-		block = (struct mem_block*)block->private;
+		block = (mem_block_t*)block->private;
 		++nr;
 	}
 	return nr;
@@ -500,6 +559,7 @@ void __alloc_slab( u32 block_mem, u32 size, u32 order )
 		// outside slab cahce
 		nr_obj = (0x00001000 << order) / _slab_obj_size[idx];
 		_slab = (struct slab*)alloc_gp_slab_mem( sizeof(struct slab) );
+		S_ASSERT(_slab, "Failed __alloc_slab");
 		_slab->top_obj_off = 0;
 		_slab->top_obj_addr = block_mem;
 	}

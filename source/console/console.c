@@ -24,8 +24,8 @@
 /*---------------------------------------------------------------------*/
 bool init_cons = false;
 //struct widget *cons;
-struct widget cons;
 //struct text_box *textbox;
+struct widget cons;
 struct text_box textbox;
 struct touch_state t_state;
 struct timer l_time;
@@ -128,9 +128,9 @@ void init_console( void )
 	textbox = (struct text_box*)create_widget( eWIDGET_TEXT_BOX );
 #endif
 	
+	init_widget( &cons );
+	init_widget( &textbox.base );
 	add_widget( &cons, &textbox.base );
-//	init_widget( &cons );
-//	init_widget( &textbox.base );
 	
 	cons.data.rect.posx = _gra_info.screen_width>>1;
 	cons.data.rect.posy = 0;

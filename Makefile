@@ -22,6 +22,9 @@ OUT_DUMP	= $(OUT)/dump
 INTERMEDIATE	= $(SOURCE)/out
 QEMU		= $(TOOLS)/qemu
 DOXYGEN		= $(TOOLS)/doxygen
+GRUB		= ./GRUB
+GRUB_LEGACY	= $(GRUB)/grub-0.97-i386-pc/boot/grub
+#GRUB_BOOT
 
 
 #--------------------------------------------------------
@@ -40,7 +43,8 @@ VPATH		= $(SOURCE) $(SOURCE)/graphic/ $(SOURCE)/boot/ \
 
 _DEF = -D__ENABLE_PROCESS__ -D__SDEBUG__
 _INC = -I $(SOURCE)/include -I $(SOURCE)/arc/x86/include -finline-functions \
-		-include $(SOURCE)/include/type.h -include $(SOURCE)/include/define.h
+		-include $(SOURCE)/include/type.h -include $(SOURCE)/include/define.h \
+		-include $(SOURCE)/include/debug.h
 CFLAGS =  $(_INC) \
 		$(_DEF)
 
@@ -80,10 +84,18 @@ Sanix.img : $(OUT_BIN)/bootloader.bin $(OUT_BIN)/Sanix.bin
 	@echo ++-+-+-+-+-+-+-+-+-++
 	@echo     create .img
 	@echo ++-+-+-+-+-+-+-+-+-++
+ifdef GRUB_BOOT
+#	dd if=$(GRUB_LEGACY)/stage1 of=$(OUT_IMG)/fd0 bs=512 count=1
+#	dd if=$(GRUB_LEGACY)/stage2 of=$(OUT_IMG)/fd0 bs=512 seek=1
+	cat $(OUT_BIN)/bootloader.bin $(OUT_BIN)/bs.bin > $(OUT_BIN)/gurb_boot
+	cat $(OUT_BIN)/boot.bin $(OUT_BIN)/Sanix.bin > $(OUT_IMG)/$@
+	cat $(OUT_IMG)/fd0 $(OUT_BIN)/Sanix.bin > $(OUT_IMG)/os.img
+else
 	cat $(OUT_BIN)/bootloader.bin $(OUT_BIN)/bs.bin > $(OUT_BIN)/boot.bin
 	cat $(OUT_BIN)/boot.bin $(OUT_BIN)/Sanix.bin > $(OUT_IMG)/$@
 	cp $(OUT_IMG)/$@ $(QEMU)/hdimage0.bin
-	-objdump -b binary -M intel -m i386 -D $(OUT_IMG)/$@ > $(OUT_DUMP)/$@_dump.txt
+#	-objdump -b binary -M intel -m i386 -D $(OUT_IMG)/$@ > $(OUT_DUMP)/$@_dump.txt
+endif
 	@echo ++-+-+-+-+-+-+-+-+-++
 	@echo  Success create .img
 	@echo ++-+-+-+-+-+-+-+-+-++
@@ -132,7 +144,7 @@ asm_obj :
 #+-+-+-+-+-+- 32bit mode -+-+-+-+-+-+-#
 C32_OBJE := boot.o interrupt.o descriptor.o \
 			define.o graphic.o debug.o \
-			time.o task.o page.o memory.o \
+			time.o page.o memory.o \
 			graphic2d.o graphic3d.o math.o \
 			ata.o list.o lock.o util.o console.o \
 			widget.o process.o pci.o signal.o \
@@ -165,7 +177,6 @@ skernel.o : skernel.c
 # link .o
 #--------------------------------------------------------
 include $(INTERMEDIATE)/ld.mk
-
 
 
 #+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-#
@@ -240,4 +251,3 @@ all :
 	@echo ------ @3  run   --------
 	@echo -------------------------
 	$(MAKE) launcher
-

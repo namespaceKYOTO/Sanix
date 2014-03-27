@@ -23,7 +23,6 @@
 #include "console.h"
 #include "list.h"
 #include "process.h"
-#include "task.h"
 #include "lock.h"
 #include "pci.h"
 
@@ -51,17 +50,22 @@ void init_kernel( void )
 	
 	init_memory();
 	
+#if 0
 	disable_interrupt( IRQ_DISABLE_MASK(IRQ_TIME|IRQ_KEYBORD), IRQ_DISABLE_MASK(IRQ_ALL) );
 	init_ata();
 	enable_interrupt( IRQ_ENABLE_MASK(IRQ_TIME|IRQ_KEYBORD), IRQ_DISABLE_MASK(IRQ_ALL) );
+#endif
 	
 	init_time();
-
+	
 	// initialize process and start multi task
 	init_process();
 
 	create_process( console, CLEATE_PROC_KERNEL );
 //	create_process( ata_test, CLEATE_PROC_KERNEL );
+#if defined __SDEBUG__
+	debug_print_proc_all();
+#endif // __SDEBUG__
 	start_multi_proc();
 
 
@@ -116,7 +120,7 @@ void ata_test( void )
 	for(;;) {
 		if( ++counter >= 100000 ) {
 			puth_console( buff[idx++] );
-			puts_console('\n');
+			putc_console('\n');
 			counter = 0;
 			if( idx >= 512 ) {
 				puts_console("end\n");

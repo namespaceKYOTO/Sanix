@@ -42,24 +42,26 @@ void init_memory( void );
 #define MEM_FLAG( falg, MEM_XXX ) (falg & MEM_XXX)
 #define ON_MEM_FLAG( flag, MEM_XXX ) (flag = flag | MEM_XXX)
 #define OFF_MEM_FLAG( flag, MEM_XXX ) (flag &= ~MEM_XXX)
-//!< structure-dependent conversion
-#define MEM_BLOCK( _list ) \
-	( (struct mem_block*)( ((u8*)(_list+1))-sizeof(struct mem_block) ) )
-//!< structure-dependent conversion
-#define MEM_BLOCK_TO_ADDR( _block ) \
-	((u32)((((u32)_block-(u32)mem_map->mem_head)/sizeof(struct mem_block))*0x00001000))
-//!< structure-dependent conversion
-#define MEM_ADDR_TO_BLOCK( _addr ) \
-	((struct mem_block*)((u32)mem_map + sizeof(struct mem_map))+(_addr>>12))
 
 #define MEMORY_MAP_ADDRESS	0x02000000			// provisional
 
 //!<
-struct mem_block {
+typedef struct _mem_block {
 	u32				flag;		//!< 1byte order  3byte flag
 	u32				private;
 	struct slist	list;
-};
+} mem_block_t;
+
+#define MEM_ORDER_START_BIT (24)
+//!< structure-dependent conversion
+#define MEM_BLOCK( _list ) \
+	( (mem_block_t*)( ((u8*)(_list+1))-sizeof(mem_block_t) ) )
+//!< structure-dependent conversion
+#define MEM_BLOCK_TO_ADDR( _block ) \
+	((u32)((((u32)_block-(u32)mem_map->mem_head)/sizeof(mem_block_t))*0x00001000))
+//!< structure-dependent conversion
+#define MEM_ADDR_TO_BLOCK( _addr ) \
+	((mem_block_t*)((u32)mem_map + sizeof(struct mem_map))+(_addr>>12))
 
 //!<
 struct mem_map {
@@ -67,7 +69,7 @@ struct mem_map {
 	u32 				available_mem;
 	u32 				unavailable_mem;
 	struct spin_lock	slock;
-	struct mem_block	*mem_head;
+	mem_block_t			*mem_head;
 };
 
 inline const struct mem_map* get_mem_map( void );
@@ -80,7 +82,7 @@ void create_memory_map( void );
 // Momory buddy system
 /*========================================================================*/
 enum {
-	FREE_BLOCK_4x1K = 0,	// 4 x 1 Kbyte
+	FREE_BLOCK_4x1K = 0,	// 1 x 4 Kbyte
 	FREE_BLOCK_4x2K,
 	FREE_BLOCK_4x4K,
 	FREE_BLOCK_4x8K,

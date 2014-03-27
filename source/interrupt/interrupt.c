@@ -10,7 +10,6 @@
 #include "graphic.h"
 #include "time.h"
 #include "memory.h"
-#include "task.h"
 #include "process.h"
 #include "console.h"
 #include "interrupt.h"
@@ -105,7 +104,7 @@ void isr_divide_error( u32 cs )
 	proc_struct_t *current_proc = get_current_process();
 //	delete_process_by_proc_struct( current_proc );
 	puts_console("divide error :: ");
-	puts_console( current_proc->debug_name );
+	puts_console( current_proc->proc_name );
 
 	schedule_exception();
 }

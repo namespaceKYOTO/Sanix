@@ -11,6 +11,7 @@
 #include "list.h"
 #include "util.h"
 #include "memory.h"
+#include "debug.h"
 
 
 #define PROC_STATE_RUNNING	0x00000001
@@ -133,7 +134,7 @@ typedef struct proc_struct {
 	pid_t				*pid_chain;		//!< process id chain list
 
 #if defined __SDEBUG__
-	u8					debug_name[128];//!< process name
+	u8					proc_name[128];//!< process name
 #endif	//__SDEBUG__
 	
 //	signal;
@@ -157,7 +158,7 @@ struct pid_bit_map {
 };
 
 
-inline void start_multi_proc( void );
+void start_multi_proc( void );
 void schedule( void );
 
 void schedule_exception( void );
